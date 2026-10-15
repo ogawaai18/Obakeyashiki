@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>お化け屋敷 運営・受付システム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hidden { display: none !important; }
+
+    /* =========================================
+       1. スタッフ用画面スタイル（シンプル・視認性重視）
+       ========================================= */
+    .staff-layout {
+      background-color: #f4f6f8;
+      color: #333;
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .staff-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 12px;
+      padding: 30px 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      border: 1px solid #e1e4e8;
+      text-align: center;
+    }
+    .staff-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 20px;
+    }
+    .staff-btn-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .staff-menu-btn {
+      background: #ffffff;
+      color: #1a73e8;
+      border: 2px solid #1a73e8;
+      padding: 16px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .staff-menu-btn:active {
+      background: #e8f0fe;
+    }
+    .staff-input {
+      width: 100%;
+      max-width: 320px;
+      padding: 14px;
+      font-size: 1.2rem;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      text-align: center;
+      margin: 15px auto 25px;
+      display: block;
+    }
+    .staff-input:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+    .staff-primary-btn {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 16px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 320px;
+    }
+    .staff-primary-btn:active {
+      background: #1557b0;
+    }
+    .staff-info-tag {
+      display: inline-block;
+      background: #e9ecef;
+      color: #495057;
+      padding: 6px 14px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* ガラス音専用：音を鳴らすボタン */
+    .sound-play-btn {
+      background: #e65100;
+      color: #fff;
+      border: none;
+      width: 100%;
+      height: 75px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(230, 81, 0, 0.3);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .sound-play-btn:active {
+      background: #bf360c;
+      transform: scale(0.98);
+    }
+
+    /* 通過ボタン */
+    .big-pass-btn {
+      background: #d93025;
+      color: #fff;
+      border: none;
+      width: 100%;
+      height: 110px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(217, 48, 37, 0.3);
+      transition: transform 0.1s, background 0.15s;
+    }
+    .big-pass-btn:active {
+      background: #b3261e;
+      transform: scale(0.98);
+    }
+    .big-pass-btn:disabled {
+      background: #adb5bd;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .staff-change-link {
+      background: none;
+      border: none;
+      color: #6c757d;
+      font-size: 0.95rem;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 25px;
+      display: inline-block;
+    }
+
+    /* =========================================
+       2. 受付用画面スタイル（全画面・お化け屋敷仕様）
+       ========================================= */
+    #view-reception {
+      background: radial-gradient(circle, #2b1010 0%, #0d0505 100%);
+      color: #f1f1f1;
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 20px;
+      position: relative;
+    }
+    .reception-inner {
+      width: 100%;
+      max-width: 760px;
+      text-align: center;
+    }
+    .reception-title {
+      font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      color: #ff3838;
+      font-size: 3rem;
+      letter-spacing: 4px;
+      text-shadow: 2px 2px 10px rgba(255, 0, 0, 0.7);
+      margin-bottom: 6px;
+    }
+    .reception-subtitle {
+      font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      font-size: 1.5rem;
+      color: #ff3838;
+      margin-bottom: 35px;
+      letter-spacing: 2px;
+    }
+    .reception-label {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      color: #dfe6e9;
+      font-weight: bold;
+    }
+    .reception-sublabel {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: #dfe6e9;
+    }
+    .count-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .count-btn {
+      background-color: #1a1a1a;
+      color: #fff;
+      border: 3px solid #555;
+      font-size: 2rem;
+      height: 90px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    .count-btn:active, .count-btn.selected {
+      background-color: #d63031;
+      border-color: #ff7675;
+      box-shadow: 0 0 25px #d63031;
+      transform: scale(1.04);
+    }
+    .price-box {
+      background: rgba(0,0,0,0.85);
+      border: 2px solid #5a1818;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    .price-number {
+      font-size: 3.2rem;
+      color: #00cec9;
+      font-weight: bold;
+      margin-top: 5px;
+      text-shadow: 0 0 15px rgba(0, 206, 201, 0.4);
+    }
+    .submit-pay-btn {
+      background: linear-gradient(135deg, #d63031 0%, #b71540 100%);
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: bold;
+      border: 2px solid #ff7675;
+      width: 100%;
+      padding: 22px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(214, 48, 49, 0.5);
+    }
+    .submit-pay-btn:disabled {
+      background: #2f3542;
+      border-color: #4b4b4b;
+      color: #718093;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .reception-footer-note {
+      font-size: 1.2rem;
+      margin-top: 25px;
+      color: #dfe6e9;
+    }
+
+    /* 画面右下の担当者変更ボタン */
+    .reception-staff-bottom-right {
+      position: fixed;
+      bottom: 20px;
+      right: 25px;
+      background: rgba(30, 30, 30, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #aaa;
+      font-size: 0.9rem;
+      padding: 10px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+    }
+    .reception-staff-bottom-right:hover {
+      background: rgba(50, 50, 50, 0.9);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* =========================================
+       3. 自作モーダル（URL非表示ポップアップ）
+       ========================================= */
+    .custom-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .custom-modal-card {
+      background: #140505;
+      border: 2px solid #801010;
+      border-radius: 14px;
+      padding: 35px 25px;
+      max-width: 440px;
+      width: 85%;
+      text-align: center;
+      box-shadow: 0 0 35px rgba(255, 0, 0, 0.5);
+      color: #fff;
+    }
+    .custom-modal-title {
+      font-size: 2rem;
+      color: #ff3838;
+      font-weight: bold;
+      margin-bottom: 18px;
+      letter-spacing: 2px;
+      font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    }
+    .custom-modal-body {
+      font-size: 1.25rem;
+      color: #f1f1f1;
+      line-height: 1.8;
+      margin-bottom: 25px;
+      white-space: pre-wrap;
+    }
+    .custom-modal-btn {
+      background: linear-gradient(135deg, #d63031 0%, #b71540 100%);
+      color: #fff;
+      border: 1px solid #ff7675;
+      font-size: 1.3rem;
+      font-weight: bold;
+      padding: 14px 45px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(214, 48, 49, 0.6);
+      transition: transform 0.1s;
+    }
+    .custom-modal-btn:active {
+      transform: scale(0.97);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 音声再生用要素（外部MP3を使用する場合に使用） -->
+  <audio id="glass-audio" preload="auto"></audio>
+
+  <!-- スタッフ用: ① 場所選択画面 -->
+  <div id="view-select-location" class="staff-layout">
+    <div class="staff-card">
+      <div class="staff-title">担当場所を選択してください</div>
+      <div class="staff-btn-list">
+        <button class="staff-menu-btn" onclick="chooseLocation('reception', '① 受付')">① 受付（自動受付）</button>
+        <button class="staff-menu-btn" onclick="chooseLocation('start', '② スタート地点')">② スタート地点</button>
+        <button class="staff-menu-btn" onclick="chooseLocation('glass', '③ ガラス音')">③ ガラス音</button>
+        <button class="staff-menu-btn" onclick="chooseLocation('takagi', '④ タカギ部屋')">④ タカギ部屋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- スタッフ用: ② 担当者名入力画面 -->
+  <div id="view-input-staff" class="staff-layout hidden">
+    <div class="staff-card">
+      <div id="staff-prompt-title" class="staff-title"></div>
+      <p style="color: #666; font-size: 0.95rem;">担当者名を入力してください</p>
+      <input type="text" id="staff-name-input" class="staff-input" placeholder="例: 山田">
+      <button class="staff-primary-btn" onclick="saveStaffName()">確定して待機</button>
+      <br>
+      <button class="staff-change-link" onclick="showView('view-select-location')">← 場所選択に戻る</button>
+    </div>
+  </div>
+
+  <!-- お客さん用: ③ 受付画面 -->
+  <div id="view-reception" class="hidden">
+    <div class="reception-inner">
+      <div class="reception-title">タカギさんの怨念</div>
+      <div class="reception-subtitle">ー束縛の赤い部屋ー</div>
+      
+      <div class="reception-label">【 利用人数を選択してください 】（1人 300円）</div>
+      <div class="reception-sublabel">※4人以上の場合は、3人以下のグループに分かれてください。</div>
+      
+      <div class="count-grid">
+        <button class="count-btn" onclick="selectCount(1)">1</button>
+        <button class="count-btn" onclick="selectCount(2)">2</button>
+        <button class="count-btn" onclick="selectCount(3)">3</button>
+      </div>
+      
+      <div class="price-box">
+        <div id="selected-info" style="color: #b2bec3; font-size: 1.1rem;">お支払い料金</div>
+        <div class="price-number" id="price-display">¥0</div>
+      </div>
+      
+      <button class="submit-pay-btn" id="pay-btn" onclick="completePayment()" disabled>料金を確定して受付</button>
+    </div>
+
+    <div class="reception-footer-note">お困りの際は、近くのスタッフまでお声がけください。</div>
+
+    <button class="reception-staff-bottom-right" onclick="resetStaff()">担当者変更</button>
+  </div>
+
+  <!-- スタッフ用: ④ 通過ボタン画面 -->
+  <div id="view-pass" class="staff-layout hidden">
+    <div class="staff-card">
+      <div class="staff-info-tag" id="pass-staff-badge"></div>
+      <div id="pass-location-title" style="font-size: 1.6rem; font-weight: bold; margin-bottom: 12px; color: #111;"></div>
+      
+      <!-- ③ガラス音のみ表示される「音を鳴らす」ボタン -->
+      <div id="sound-btn-container" class="hidden">
+        <button class="sound-play-btn" onclick="playGlassSound()">
+          🔊 ガラス音を鳴らす
+        </button>
+      </div>
+
+      <p style="color: #666; font-size: 1rem; margin-bottom: 25px;">
+        お客さんが通過したら、下のボタンを押してください。
+      </p>
+
+      <button class="big-pass-btn" id="pass-btn" onclick="sendPass()">
+        通 過
+      </button>
+
+      <div id="pass-status-msg" style="margin-top: 15px; font-size: 1.1rem; font-weight: bold; color: #1a73e8; min-height: 1.5em;"></div>
+      
+      <button class="staff-change-link" onclick="resetStaff()">担当者を変更する</button>
+    </div>
+  </div>
+
+  <!-- 自作モーダル（URLが出ないポップアップ） -->
+  <div id="custom-modal" class="custom-modal-overlay hidden">
+    <div class="custom-modal-card">
+      <div id="modal-title" class="custom-modal-title">受付完了</div>
+      <div id="modal-content" class="custom-modal-body"></div>
+      <button class="custom-modal-btn" onclick="closeModal()">終了</button>
+    </div>
+  </div>
+
+  <script>
+    // ★★★ ここにGASのデプロイURL (/exec) を貼り付けてください ★★★
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxTNRMx0fB8iTSMR32O39FXxALjPGjL4D_fCJ2tlooYlXN61sJvyhPWN-0Q2PJ3PFntHw/exec";
+
+    // 外部MP3ファイルを使用したい場合はここにURLを入力（空ならWeb Audio API合成音）
+    const GLASS_AUDIO_URL = "https://drive.google.com/file/d/1yuDHDiZ8LK4REXZ8zSvT_UXxByAnAmSm/view?usp=drive_link"; 
+
+    let currentLocationKey = "";
+    let currentLocationLabel = "";
+    let currentStaffName = "";
+
+    let currentCount = 0;
+    const PRICE_PER_PERSON = 300;
+
+    function showView(viewId) {
+      ['view-select-location', 'view-input-staff', 'view-reception', 'view-pass'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function chooseLocation(key, label) {
+      currentLocationKey = key;
+      currentLocationLabel = label;
+      document.getElementById('staff-prompt-title').innerText = label;
+      document.getElementById('staff-name-input').value = "";
+      showView('view-input-staff');
+    }
+
+    function saveStaffName() {
+      const name = document.getElementById('staff-name-input').value.trim();
+      if (!name) {
+        alert("担当者名を入力してください");
+        return;
+      }
+      currentStaffName = name;
+
+      if (currentLocationKey === 'reception') {
+        resetReceptionForm();
+        showView('view-reception');
+      } else {
+        document.getElementById('pass-staff-badge').innerText = `担当: ${currentStaffName}`;
+        document.getElementById('pass-location-title').innerText = currentLocationLabel;
+        document.getElementById('pass-status-msg').innerText = "";
+
+        if (currentLocationKey === 'glass') {
+          document.getElementById('sound-btn-container').classList.remove('hidden');
+        } else {
+          document.getElementById('sound-btn-container').classList.add('hidden');
+        }
+
+        showView('view-pass');
+      }
+    }
+
+    function resetStaff() {
+      if (confirm("担当者を変更して最初の選択画面に戻りますか？")) {
+        currentLocationKey = "";
+        currentLocationLabel = "";
+        currentStaffName = "";
+        showView('view-select-location');
+      }
+    }
+
+    // ---------- ガラス音再生処理 ----------
+    let audioContext = null;
+
+    async function playGlassSound() {
+      if (GLASS_AUDIO_URL && GLASS_AUDIO_URL.trim() !== "") {
+        const audioElem = document.getElementById('glass-audio');
+        audioElem.src = GLASS_AUDIO_URL;
+        try {
+          audioElem.currentTime = 0;
+          await audioElem.play();
+          return;
+        } catch (e) {
+          console.warn("外部ファイルの再生に失敗したため合成音を再生します:", e);
+        }
+      }
+
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!audioContext) {
+          audioContext = new AudioCtx();
+        }
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+
+        const ctx = audioContext;
+        const now = ctx.currentTime;
+
+        const bufferSize = ctx.sampleRate * 0.5;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "highpass";
+        filter.frequency.setValueAtTime(1500, now);
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(1.0, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+
+        noise.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        noise.start(now);
+
+        [2200, 3100, 4300, 5600].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const oscGain = ctx.createGain();
+          const startTime = now + (idx * 0.03);
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, startTime);
+
+          oscGain.gain.setValueAtTime(0.4, startTime);
+          oscGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+
+          osc.connect(oscGain);
+          oscGain.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + 0.55);
+        });
+
+      } catch (err) {
+        alert("音声再生エラー: " + err.message);
+      }
+    }
+
+    // ---------- 自作モーダルの制御 ----------
+    function showModal(title, message) {
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-content').innerText = message;
+      document.getElementById('custom-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('custom-modal').classList.add('hidden');
+      resetReceptionForm();
+    }
+
+    // ---------- ① 受付処理（fetch による POST 通信） ----------
+    function selectCount(count) {
+      currentCount = count;
+      document.querySelectorAll('.count-btn').forEach((btn, index) => {
+        btn.classList.toggle('selected', (index + 1) === count);
+      });
+      const totalPrice = currentCount * PRICE_PER_PERSON;
+      document.getElementById('selected-info').innerText = `選択人数: ${currentCount} 名`;
+      document.getElementById('price-display').innerText = `¥${totalPrice.toLocaleString()}`;
+      document.getElementById('pay-btn').disabled = false;
+    }
+
+    async function completePayment() {
+      if (currentCount === 0) return;
+      const totalPrice = currentCount * PRICE_PER_PERSON;
+      const btn = document.getElementById('pay-btn');
+      btn.disabled = true;
+      btn.innerText = "登録中...";
+
+      try {
+        const payload = {
+          action: "reception",
+          data: {
+            count: currentCount,
+            price: totalPrice,
+            staffName: currentStaffName
+          }
+        };
+
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+
+        if (json.status === "success") {
+          showModal(
+            "受付完了",
+            `【 第 ${json.groupId} 組 】\n人数: ${currentCount}名\n合計: ¥${totalPrice.toLocaleString()}\n\nお支払いカウンターまでお進みください。`
+          );
+        } else {
+          showModal("エラー", json.message || "登録に失敗しました。");
+          btn.disabled = false;
+          btn.innerText = "料金を確定して受付";
+        }
+      } catch (err) {
+        showModal("通信エラー", "通信に失敗しました。もう一度お試しください。");
+        console.error(err);
+        btn.disabled = false;
+        btn.innerText = "料金を確定して受付";
+      }
+    }
+
+    function resetReceptionForm() {
+      currentCount = 0;
+      document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
+      document.getElementById('selected-info').innerText = "お支払い料金";
+      document.getElementById('price-display').innerText = "¥0";
+      const btn = document.getElementById('pay-btn');
+      btn.disabled = true;
+      btn.innerText = "料金を確定して受付";
+    }
+
+    // ---------- ②〜④ 通過ボタン処理（fetch による POST 通信） ----------
+    async function sendPass() {
+      const btn = document.getElementById('pass-btn');
+      const msg = document.getElementById('pass-status-msg');
+      btn.disabled = true;
+      btn.innerText = "記録中...";
+      msg.innerText = "";
+
+      try {
+        const payload = {
+          action: "pass",
+          locationKey: currentLocationKey,
+          staffName: currentStaffName
+        };
+
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+        btn.disabled = false;
+        btn.innerText = "通 過";
+
+        if (json.status === "success") {
+          msg.innerText = `第 ${json.groupId} 組の通過を記録しました！`;
+        } else {
+          msg.innerText = json.message;
+        }
+        setTimeout(() => { msg.innerText = ""; }, 4000);
+
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerText = "通 過";
+        alert("通信エラーが発生しました。再度お試しください。");
+        console.error(err);
+      }
+    }
+  </script>
+
+</body>
+</html>
