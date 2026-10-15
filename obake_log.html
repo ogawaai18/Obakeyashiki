@@ -514,79 +514,66 @@
     }
 
     // ---------- ガラス音再生処理 ----------
+    // ========================================================
+    // ★ 音量ブースト倍率の設定（1.0 = 通常、2.0 = 2倍、3.0 = 3倍）
+    // 音割れしない範囲で 2.0 〜 3.5 くらいがおすすめです
+    const VOLUME_BOOST = 2.5;
+    // ========================================================
+
     let audioContext = null;
+    let boostAudioBuffer = null;
 
     async function playGlassSound() {
+      // 1. 外部音声ファイルが指定されている場合（音量ブースト再生）
       if (GLASS_AUDIO_URL && GLASS_AUDIO_URL.trim() !== "") {
-        const audioElem = document.getElementById('glass-audio');
-        audioElem.src = GLASS_AUDIO_URL;
         try {
-          audioElem.currentTime = 0;
-          await audioElem.play();
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!audioContext) {
+            audioContext = new AudioCtx();
+          }
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
+
+          // 初回のみ音声ファイルをロード・デコードしてメモリに保持（連打しても即座に鳴る）
+          if (!boostAudioBuffer) {
+            const response = await fetch(GLASS_AUDIO_URL);
+            const arrayBuffer = await response.arrayBuffer();
+            boostAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          }
+
+          // 音源ノードの作成
+          const source = audioContext.createBufferSource();
+          source.buffer = boostAudioBuffer;
+
+          // 音量を増幅するゲインノードを作成
+          const gainNode = audioContext.createGain();
+          gainNode.gain.setValueAtTime(VOLUME_BOOST, audioContext.currentTime);
+
+          // 接続: 音源 -> 増幅ノード -> スピーカー
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          source.start(0);
           return;
+
         } catch (e) {
-          console.warn("外部ファイルの再生に失敗したため合成音を再生します:", e);
+          console.warn("ブースト再生に失敗したため通常再生を試みます:", e);
+          // 万が一ブースト処理に失敗した場合は通常のAudio再生
+          try {
+            const sound = new Audio(GLASS_AUDIO_URL);
+            sound.volume = 1.0;
+            await sound.play();
+            return;
+          } catch (err) {
+            console.error("通常再生も失敗:", err);
+          }
         }
       }
 
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!audioContext) {
-          audioContext = new AudioCtx();
-        }
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-        }
-
-        const ctx = audioContext;
-        const now = ctx.currentTime;
-
-        const bufferSize = ctx.sampleRate * 0.5;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1;
-        }
-
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = "highpass";
-        filter.frequency.setValueAtTime(1500, now);
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(1.0, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-
-        noise.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        noise.start(now);
-
-        [2200, 3100, 4300, 5600].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const oscGain = ctx.createGain();
-          const startTime = now + (idx * 0.03);
-
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(freq, startTime);
-
-          oscGain.gain.setValueAtTime(0.4, startTime);
-          oscGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
-
-          osc.connect(oscGain);
-          oscGain.connect(ctx.destination);
-
-          osc.start(startTime);
-          osc.stop(startTime + 0.55);
-        });
-
-      } catch (err) {
-        alert("音声再生エラー: " + err.message);
-      }
+      // 2. 外部ファイルが無い/失敗した場合は合成音
+      playSynthesizedSound();
     }
-
     // ---------- 自作モーダルの制御 ----------
     function showModal(title, message) {
       document.getElementById('modal-title').innerText = title;
